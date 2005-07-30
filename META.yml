@@ -2,7 +2,7 @@
 name: subatom
 version: 0.01
 author: ~
-abstract: ~
+abstract: produce an atom feed from subversion commits
 license: bsd
 requires:
   XML::Atom: 0
