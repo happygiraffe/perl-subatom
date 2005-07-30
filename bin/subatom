@@ -1,0 +1,145 @@
+#!/usr/bin/perl -wT
+#
+# Produce an atom feed of subversion commits.
+#
+# @(#) $Id$
+#
+
+use strict;
+use warnings;
+
+use File::Basename qw( dirname );
+use Getopt::Std qw( getopts );
+use XML::Atom::Content;
+use XML::Atom::Entry;
+use XML::Atom::Feed;
+use XML::Atom::Person;
+use XML::Atom::Util qw( encode_xml );
+
+our $VERSION = '0.01';
+
+sub usage;
+
+# Ensure we know what we're doing for tainting.
+$ENV{PATH} = join ':', qw( /bin /usr/bin /usr/local/bin );
+
+my %opt = ( 'm' => 30 );
+getopts( "m:", \%opt ) or usage;
+
+my $repos = shift
+  or usage;
+# untaint.
+$repos =~ m/^((?:https?|file|svn|svn\+ssh):\/\/[-\/\w.\@]+)/;
+my $repos_url = $1;
+usage unless $repos_url;
+$repos_url =~ s!/$!!;           # Remove trailing slash.
+
+# Filter out crap (for tainting).
+my @path = grep { $_ } map { m!^(/[-/\w.\@]+)$!; $1 } @ARGV;
+@path = qw( / ) unless @path;
+
+my @items;
+foreach my $p ( @path ) {
+    my $url = $repos_url . $p;
+    # See perlipc(3) for details about all this.
+    my $pid = open my $fh, '-|';
+    if ( $pid ) {
+        # Parent.
+        push @items, process_log_lines( $fh );
+        close $fh;
+    } else {
+        # Child.
+        exec 'svn', 'log', '-v', $url
+          or die "$0: exec(svn log): $!\n";
+        # NOTREACHED
+    }
+}
+
+# If we've chosen multiple paths, then order them by the revision
+# number.  Because we're only concerned with one repository, we can
+# get away with this.  Otherwise, we'd have to order by date.
+@items = sort { $b->{ revision } <=> $a->{ revision } } @items;
+
+# Bring the list down to size.
+$#items = $opt{m}
+  if @items > $opt{m};
+
+my $feed = make_feed_from_items( @items );
+print $feed->as_xml;
+exit 0;
+
+sub usage {
+    my $me = basename $0;
+    die "usage: $me [-m max] repos_url [path ...]\n";
+}
+
+sub process_log_lines {
+    my ( $fh ) = @_;
+    my ( @items, $current_item, $in_paths );
+    while ( <$fh> ) {
+        1 while chomp;
+        if ( m/^-+$/ ) {
+            push @items, $current_item if $current_item;
+            $current_item = {};
+        } elsif ( m/^r\d+ / ) {
+            my ( $ver, $user, $date, $lines ) = split / \| /;
+            $ver   =~ s/^r//;
+            $date  =~ s/ \(.*\)//;
+            $lines =~ s/ .*//;
+            $current_item->{ revision } = $ver;
+            $current_item->{ date }     = $date;
+            $current_item->{ user }     = $user;
+            $current_item->{ lines }    = $lines;
+        } elsif ( m/^Changed paths:/ ) {
+            $in_paths = 1;
+        } elsif ( m/^$/ ) {
+            $in_paths = 0;
+        } elsif ( $in_paths ) {
+            push @{ $current_item->{ affected } }, $_;
+        } else {
+            push @{ $current_item->{ msg } }, $_;
+        }
+    }
+    return @items;
+}
+
+sub item_to_entry {
+    my ( $item ) = @_;
+    my $msg = encode_xml join "\n", @{ $item->{ msg } };
+    $msg = "<p>$msg</p>\n";
+    $msg .= "<p>Affected files:</p>\n";
+    $msg .= "<ul>\n";
+    $msg .= "<li>$_</li>\n" foreach @{ $item->{ affected } };
+    $msg .= "</ul>\n";
+
+    my $entry = XML::Atom::Entry->new;
+    $entry->title( item_title( $item ) );
+    $entry->content( $msg );
+
+    my $author = XML::Atom::Person->new;
+    $author->name( $item->{ user } );
+    $entry->author( $author );
+
+    # XXX What to link to?
+
+    # XXX Date?
+
+    return $entry;
+}
+
+sub item_title {
+    my ( $item ) = @_;
+    my @files =
+        sort { length( $a ) <=> length( $b ) }
+        map  { ( split ' ' )[1] } @{ $item->{ affected } };
+    my $d = dirname( $files[0] );
+    return "r$item->{revision} - $d";
+}
+
+sub make_feed_from_items {
+    my ( @items ) = @_;
+    my $feed = XML::Atom::Feed->new;
+    $feed->title( "Recent commits to $repos_url" );
+    $feed->add_entry( item_to_entry( $_ ) ) foreach @items;
+    return $feed;
+}
