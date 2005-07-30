@@ -39,28 +39,20 @@ my @path = grep { $_ } map { m!^(/[-/\w.\@]+)$!; $1 } @ARGV;
 @path = qw( / ) unless @path;
 
 my @items;
-foreach my $p ( @path ) {
-    my $url = $repos_url . $p;
-    # See perlipc(3) for details about all this.
-    my $pid = open my $fh, '-|';
-    if ( $pid ) {
-        # Parent.
-        push @items, process_log_lines( $fh );
-        close $fh;
-    } else {
-        # Child.
-        exec 'svn', 'log', '-v', $url
-          or die "$0: exec(svn log): $!\n";
-        # NOTREACHED
-    }
+# See perlipc(3) for details about all this.
+my $pid = open my $fh, '-|';
+if ( $pid ) {
+    # Parent.
+    push @items, process_log_lines( $fh );
+    close $fh;
+} else {
+    # Child.
+    exec 'svn', 'log', '-v', $repos_url, @path
+      or die "$0: exec(svn log): $!\n";
+    # NOTREACHED
 }
 
-# If we've chosen multiple paths, then order them by the revision
-# number.  Because we're only concerned with one repository, we can
-# get away with this.  Otherwise, we'd have to order by date.
-@items = sort { $b->{ revision } <=> $a->{ revision } } @items;
-
-# Bring the list down to size.
+# Bring the list down to size if necessary.
 $#items = $opt{m}
   if @items > $opt{m};
 
