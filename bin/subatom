@@ -21,7 +21,7 @@ our $VERSION = '0.01';
 sub usage;
 
 # Ensure we know what we're doing for tainting.
-$ENV{PATH} = join ':', qw( /bin /usr/bin /usr/local/bin );
+local $ENV{PATH} = join ':', qw( /bin /usr/bin /usr/local/bin );
 
 my %opt = ( 'm' => 30 );
 getopts( "m:", \%opt ) or usage;
@@ -38,19 +38,7 @@ $repos_url =~ s!/$!!;           # Remove trailing slash.
 my @path = grep { $_ } map { m!^(/[-/\w.\@]+)$!; $1 } @ARGV;
 @path = qw( / ) unless @path;
 
-my @items;
-# See perlipc(3) for details about all this.
-my $pid = open my $fh, '-|';
-if ( $pid ) {
-    # Parent.
-    push @items, process_log_lines( $fh );
-    close $fh;
-} else {
-    # Child.
-    exec 'svn', 'log', '-v', $repos_url, @path
-      or die "$0: exec(svn log): $!\n";
-    # NOTREACHED
-}
+my @items = fetch_log_items( $repos_url, @path );
 
 # Bring the list down to size if necessary.
 $#items = $opt{m}
@@ -63,6 +51,24 @@ exit 0;
 sub usage {
     my $me = basename $0;
     die "usage: $me [-m max] repos_url [path ...]\n";
+}
+
+sub fetch_log_items {
+    my ( $repos_url, @path ) = @_;
+
+    # See perlipc(3) for details about all this.
+    my $pid = open my $fh, '-|';
+    if ( $pid ) {
+        # Parent.
+        my @items = process_log_lines( $fh );
+        close $fh;
+        return @items;
+    } else {
+        # Child.
+        exec 'svn', 'log', '-v', $repos_url, @path
+            or die "$0: exec(svn log): $!\n";
+        # NOTREACHED
+    }
 }
 
 sub process_log_lines {
