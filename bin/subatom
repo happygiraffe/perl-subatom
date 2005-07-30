@@ -9,6 +9,7 @@ use strict;
 use warnings;
 
 use File::Basename qw( dirname );
+use File::Spec;
 use Getopt::Std qw( getopts );
 use XML::Atom::Content;
 use XML::Atom::Entry;
@@ -40,10 +41,6 @@ my @path = grep { $_ } map { m!^(/[-/\w.\@]+)$!; $1 } @ARGV;
 
 my @items = fetch_log_items( $repos_url, @path );
 
-# Bring the list down to size if necessary.
-$#items = $opt{m}
-  if @items > $opt{m};
-
 my $feed = make_feed_from_items( @items );
 print $feed->as_xml;
 exit 0;
@@ -64,7 +61,10 @@ sub fetch_log_items {
         close $fh;
         return @items;
     } else {
-        # Child.
+        # Child.  Ensure that errors get thrown away, since svn log
+        # will probably die with a "broken pipe" error.  That's
+        # because we close it as soon as we've read enough.
+        open STDERR, File::Spec->devnull;
         exec 'svn', 'log', '-v', $repos_url, @path
             or die "$0: exec(svn log): $!\n";
         # NOTREACHED
@@ -78,6 +78,7 @@ sub process_log_lines {
         1 while chomp;
         if ( m/^-+$/ ) {
             push @items, $current_item if $current_item;
+            last if @items >= $opt{ m };
             $current_item = {};
         } elsif ( m/^r\d+ / ) {
             my ( $ver, $user, $date, $lines ) = split / \| /;
