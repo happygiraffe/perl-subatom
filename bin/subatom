@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use File::Basename qw( dirname );
+use File::Basename qw( basename dirname );
 use File::Spec;
 use Getopt::Std qw( getopts );
 use XML::Atom::Content;
@@ -18,6 +18,7 @@ use XML::Atom::Person;
 use XML::Atom::Util qw( encode_xml );
 
 our $VERSION = '0.01';
+my $me = basename $0;
 
 sub usage;
 
@@ -46,7 +47,6 @@ print $feed->as_xml;
 exit 0;
 
 sub usage {
-    my $me = basename $0;
     die "usage: $me [-m max] repos_url [path ...]\n";
 }
 
@@ -66,7 +66,7 @@ sub fetch_log_items {
         # because we close it as soon as we've read enough.
         open STDERR, File::Spec->devnull;
         exec 'svn', 'log', '-v', $repos_url, @path
-            or die "$0: exec(svn log): $!\n";
+            or die "$me: exec(svn log): $!\n";
         # NOTREACHED
     }
 }
