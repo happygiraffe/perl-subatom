@@ -1,6 +1,6 @@
 Revision history for Perl extension subatom.
 
 0.01  Sat Jul 30 20:58:29 2005
-	- original version; created by h2xs 1.23 with options
-		-AX -n subatom
+	- original version
 
+# @(#) $Id$
