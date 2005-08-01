@@ -1,5 +1,15 @@
 Revision history for Perl extension subatom.
 
+0.02  Mon Aug  1 13:43:44 BST 2005
+	- Added more Atom bits to the resulting feed:
+	  * feed/entry/content/@type
+	  * feed/entry/id
+	  * feed/entry/link
+	  * feed/entry/summary
+	  * feed/entry/updated
+	  * feed/id
+	  * feed/updated
+
 0.01  Sat Jul 30 20:58:29 2005
 	- original version
 

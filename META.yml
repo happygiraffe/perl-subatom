@@ -1,6 +1,6 @@
---- #YAML:1.0
+---
 name: subatom
-version: 0.01
+version: 0.02
 author: ~
 abstract: produce an atom feed from subversion commits
 license: bsd
