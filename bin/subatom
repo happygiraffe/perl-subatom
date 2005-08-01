@@ -14,6 +14,7 @@ use Getopt::Std qw( getopts );
 use XML::Atom::Content;
 use XML::Atom::Entry;
 use XML::Atom::Feed;
+use XML::Atom::Link;
 use XML::Atom::Person;
 use XML::Atom::Util qw( encode_xml );
 
@@ -119,7 +120,13 @@ sub item_to_entry {
     $author->name( $item->{ user } );
     $entry->author( $author );
 
-    # XXX What to link to?
+    my $link = XML::Atom::Link->new;
+    $link->type( 'text/html' );
+    $link->rel( 'alternate' );
+    # XXX Find something better to link to...
+    my $path = ( split ' ', $item->{ affected }[0], 2 )[1];
+    $link->href( $repos_url . $path );
+    $entry->add_link( $link );
 
     # XXX Date?
 
