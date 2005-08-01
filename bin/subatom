@@ -106,6 +106,7 @@ sub process_log_lines {
 sub item_to_entry {
     my ( $item ) = @_;
     my $msg = encode_xml join "\n", @{ $item->{ msg } };
+    my $summary = $msg;
     $msg = "<p>$msg</p>\n";
     $msg .= "<p>Affected files:</p>\n";
     $msg .= "<ul>\n";
@@ -118,6 +119,7 @@ sub item_to_entry {
     $entry->updated( svn_date_to_atom_date( $item->{ date } ) );
     $entry->content( $msg );
     $entry->content->type( 'application/xhtml+xml' );
+    $entry->summary( $summary );
 
     my $author = XML::Atom::Person->new;
     $author->name( $item->{ user } );
