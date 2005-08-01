@@ -159,6 +159,7 @@ sub item_title {
 sub make_feed_from_items {
     my ( @items ) = @_;
     my $feed = XML::Atom::Feed->new;
+    $feed->id( $repos_url );
     $feed->title( "Recent commits to $repos_url" );
     $feed->updated( svn_date_to_atom_date( $items[0]{ date } ) );
     $feed->add_entry( item_to_entry( $_ ) ) foreach @items;
