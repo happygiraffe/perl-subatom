@@ -18,7 +18,7 @@ use XML::Atom::Link;
 use XML::Atom::Person;
 use XML::Atom::Util qw( encode_xml );
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 my $me = basename $0;
 
 sub usage;
