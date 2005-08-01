@@ -114,6 +114,7 @@ sub item_to_entry {
 
     my $entry = XML::Atom::Entry->new;
     $entry->title( item_title( $item ) );
+    $entry->updated( svn_date_to_atom_date( $item->{ date } ) );
     $entry->content( $msg );
     $entry->content->type( 'application/xhtml+xml' );
 
@@ -129,9 +130,18 @@ sub item_to_entry {
     $link->href( $repos_url . $path );
     $entry->add_link( $link );
 
-    # XXX Date?
-
     return $entry;
+}
+
+sub svn_date_to_atom_date {
+    my ( $svn_date ) = @_;
+
+    # Change from '2005-08-01 12:07:02 +0100' to '2005-08-01T12:07:02Z'.
+    # XXX We sidestep timezone issues for now...
+
+    $svn_date =~ s/ /T/;
+    $svn_date =~ s/ \+\d\d\d\d/Z/;
+    return $svn_date;
 }
 
 sub item_title {
