@@ -113,6 +113,7 @@ sub item_to_entry {
     $msg .= "</ul>\n";
 
     my $entry = XML::Atom::Entry->new;
+    $entry->id( $repos_url . '#r' . $item->{ revision } );
     $entry->title( item_title( $item ) );
     $entry->updated( svn_date_to_atom_date( $item->{ date } ) );
     $entry->content( $msg );
