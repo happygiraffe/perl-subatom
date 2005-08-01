@@ -115,6 +115,7 @@ sub item_to_entry {
     my $entry = XML::Atom::Entry->new;
     $entry->title( item_title( $item ) );
     $entry->content( $msg );
+    $entry->content->type( 'application/xhtml+xml' );
 
     my $author = XML::Atom::Person->new;
     $author->name( $item->{ user } );
