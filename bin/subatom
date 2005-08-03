@@ -66,6 +66,9 @@ sub fetch_log_items {
         # will probably die with a "broken pipe" error.  That's
         # because we close it as soon as we've read enough.
         open STDERR, File::Spec->devnull;
+        # Ensure that we get subversion to generate times with no
+        # timezone.  This means that they match the Atom expectation.
+        local $ENV{TZ} = 'UTC';
         exec 'svn', 'log', '-v', $repos_url, @path
             or die "$me: exec(svn log): $!\n";
         # NOTREACHED
@@ -139,8 +142,9 @@ sub item_to_entry {
 sub svn_date_to_atom_date {
     my ( $svn_date ) = @_;
 
-    # Change from '2005-08-01 12:07:02 +0100' to '2005-08-01T12:07:02Z'.
-    # XXX We sidestep timezone issues for now...
+    # Change from '2005-08-01 11:07:02 +0000' to
+    # '2005-08-01T12:07:02Z'.  Because we specified "TZ" when running
+    # svn, we can rely on the time being zulu time.
 
     $svn_date =~ s/ /T/;
     $svn_date =~ s/ \+\d\d\d\d/Z/;
