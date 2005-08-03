@@ -18,7 +18,7 @@ use XML::Atom::Link;
 use XML::Atom::Person;
 use XML::Atom::Util qw( encode_xml );
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 my $me = basename $0;
 
 sub usage;
@@ -27,7 +27,7 @@ sub usage;
 local $ENV{PATH} = join ':', qw( /bin /usr/bin /usr/local/bin );
 
 my %opt = ( 'm' => 30 );
-getopts( "m:", \%opt ) or usage;
+getopts( "m:o:", \%opt ) or usage;
 
 my $repos = shift
   or usage;
@@ -44,7 +44,12 @@ my @path = grep { $_ } map { m!^(/[-/\w.\@]+)$!; $1 } @ARGV;
 my @items = fetch_log_items( $repos_url, @path );
 
 my $feed = make_feed_from_items( @items );
-print $feed->as_xml;
+if ( $opt{ o } ) {
+    my ( $file ) = $opt{ o } =~ m/^([-\w\/.]+)/; # untaint.
+    write_feed_to_file( $feed => $file );
+} else {
+    print $feed->as_xml;
+}
 exit 0;
 
 sub usage {
@@ -66,6 +71,9 @@ sub fetch_log_items {
         # will probably die with a "broken pipe" error.  That's
         # because we close it as soon as we've read enough.
         open STDERR, File::Spec->devnull;
+        # Ensure that we get subversion to generate times with no
+        # timezone.  This means that they match the Atom expectation.
+        local $ENV{TZ} = 'UTC';
         exec 'svn', 'log', '-v', $repos_url, @path
             or die "$me: exec(svn log): $!\n";
         # NOTREACHED
@@ -128,6 +136,8 @@ sub item_to_entry {
     my $link = XML::Atom::Link->new;
     $link->type( 'text/html' );
     $link->rel( 'alternate' );
+    # Avoid undef warning in earlier versions of XML::Atom.
+    $link->title( '' );
     # XXX Find something better to link to...
     my $path = ( split ' ', $item->{ affected }[0], 2 )[1];
     $link->href( $repos_url . $path );
@@ -139,8 +149,9 @@ sub item_to_entry {
 sub svn_date_to_atom_date {
     my ( $svn_date ) = @_;
 
-    # Change from '2005-08-01 12:07:02 +0100' to '2005-08-01T12:07:02Z'.
-    # XXX We sidestep timezone issues for now...
+    # Change from '2005-08-01 11:07:02 +0000' to
+    # '2005-08-01T12:07:02Z'.  Because we specified "TZ" when running
+    # svn, we can rely on the time being zulu time.
 
     $svn_date =~ s/ /T/;
     $svn_date =~ s/ \+\d\d\d\d/Z/;
@@ -166,6 +177,22 @@ sub make_feed_from_items {
     return $feed;
 }
 
+# Write out a feed to the file, taking care to avoid writing unless
+# the feed we've just generated is actually newer than the one on
+# disk.  This is needed for correct If-Modified-Since support.
+sub write_feed_to_file {
+    my ( $feed, $file ) = @_;
+    if ( -f $file ) {
+        open my $fh, '<', $file or die "$me: open($file): $!\n";
+        my $old_feed = XML::Atom::Feed->new( $fh );
+        close $fh;
+        return if $feed->updated le $old_feed->updated;
+    }
+    open my $fh, '>', $file or die "$me: open(>$file): $!\n";
+    print $fh $feed->as_xml;
+    close $fh;
+}
+
 __END__
 
 =pod
@@ -176,7 +203,7 @@ subatom - produce an atom feed from subversion commits
 
 =head1 SYNOPSIS
 
-  subatom [-m max] REPOSITORY_URL [path ...]
+  subatom [-m max] [-o output] REPOSITORY_URL [path ...]
 
 =head1 DESCRIPTION
 
@@ -191,6 +218,14 @@ to the entire repository.
 
 The I<-m> flag states how many entries you would like in the feed.
 The default is 30.
+
+If you pass a filename using the I<-o> flag, the output will be
+written there instead of STDOUT.  If the filename already exists then
+the timestamp will be checked and the new feed will only be written if
+it actually contains any newer entries.  If you will be serving the
+feed file using a web server, then doing this enables
+If-Modified-Since to work correctly (ie: feed readers will only
+download the file if it has actually changed).
 
 =head1 SEE ALSO
 
