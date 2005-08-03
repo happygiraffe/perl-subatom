@@ -27,7 +27,7 @@ sub usage;
 local $ENV{PATH} = join ':', qw( /bin /usr/bin /usr/local/bin );
 
 my %opt = ( 'm' => 30 );
-getopts( "m:", \%opt ) or usage;
+getopts( "m:o:", \%opt ) or usage;
 
 my $repos = shift
   or usage;
@@ -44,7 +44,12 @@ my @path = grep { $_ } map { m!^(/[-/\w.\@]+)$!; $1 } @ARGV;
 my @items = fetch_log_items( $repos_url, @path );
 
 my $feed = make_feed_from_items( @items );
-print $feed->as_xml;
+if ( $opt{ o } ) {
+    my ( $file ) = $opt{ o } =~ m/^([-\w\/.]+)/; # untaint.
+    write_feed_to_file( $feed => $file );
+} else {
+    print $feed->as_xml;
+}
 exit 0;
 
 sub usage {
@@ -172,6 +177,22 @@ sub make_feed_from_items {
     return $feed;
 }
 
+# Write out a feed to the file, taking care to avoid writing unless
+# the feed we've just generated is actually newer than the one on
+# disk.  This is needed for correct If-Modified-Since support.
+sub write_feed_to_file {
+    my ( $feed, $file ) = @_;
+    if ( -f $file ) {
+        open my $fh, '<', $file or die "$me: open($file): $!\n";
+        my $old_feed = XML::Atom::Feed->new( $fh );
+        close $fh;
+        return if $feed->updated le $old_feed->updated;
+    }
+    open my $fh, '>', $file or die "$me: open(>$file): $!\n";
+    print $fh $feed->as_xml;
+    close $fh;
+}
+
 __END__
 
 =pod
@@ -182,7 +203,7 @@ subatom - produce an atom feed from subversion commits
 
 =head1 SYNOPSIS
 
-  subatom [-m max] REPOSITORY_URL [path ...]
+  subatom [-m max] [-o output] REPOSITORY_URL [path ...]
 
 =head1 DESCRIPTION
 
@@ -197,6 +218,14 @@ to the entire repository.
 
 The I<-m> flag states how many entries you would like in the feed.
 The default is 30.
+
+If you pass a filename using the I<-o> flag, the output will be
+written there instead of STDOUT.  If the filename already exists then
+the timestamp will be checked and the new feed will only be written if
+it actually contains any newer entries.  If you will be serving the
+feed file using a web server, then doing this enables
+If-Modified-Since to work correctly (ie: feed readers will only
+download the file if it has actually changed).
 
 =head1 SEE ALSO
 
