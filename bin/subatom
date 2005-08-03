@@ -131,6 +131,8 @@ sub item_to_entry {
     my $link = XML::Atom::Link->new;
     $link->type( 'text/html' );
     $link->rel( 'alternate' );
+    # Avoid undef warning in earlier versions of XML::Atom.
+    $link->title( '' );
     # XXX Find something better to link to...
     my $path = ( split ' ', $item->{ affected }[0], 2 )[1];
     $link->href( $repos_url . $path );
