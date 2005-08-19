@@ -18,7 +18,7 @@ use XML::Atom::Link;
 use XML::Atom::Person;
 use XML::Atom::Util qw( encode_xml );
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 my $me = basename $0;
 
 sub usage;
@@ -43,7 +43,7 @@ my @path = grep { $_ } map { m!^(/[-/\w.\@]+)$!; $1 } @ARGV;
 
 my @items = fetch_log_items( $repos_url, @path );
 
-my $feed = make_feed_from_items( @items );
+my $feed = make_feed_from_items( \@items, \@path );
 if ( $opt{ o } ) {
     my ( $file ) = $opt{ o } =~ m/^([-\w\/.]+)/; # untaint.
     write_feed_to_file( $feed => $file );
@@ -168,12 +168,17 @@ sub item_title {
 }
 
 sub make_feed_from_items {
-    my ( @items ) = @_;
+    my ( $items, $requested ) = @_;
     my $feed = XML::Atom::Feed->new;
     $feed->id( $repos_url );
-    $feed->title( "Recent commits to $repos_url" );
-    $feed->updated( svn_date_to_atom_date( $items[0]{ date } ) );
-    $feed->add_entry( item_to_entry( $_ ) ) foreach @items;
+
+    my $title = "Recent commits to $repos_url";
+    $title .= " for @{$requested}"
+        unless @{ $requested } == 1 && $requested->[0] eq '/';
+    $feed->title( $title );
+
+    $feed->updated( svn_date_to_atom_date( $items->[0]{ date } ) );
+    $feed->add_entry( item_to_entry( $_ ) ) foreach @{ $items };
     return $feed;
 }
 

@@ -1,5 +1,8 @@
 Revision history for Perl extension subatom.
 
+0.04  Fri Aug 19 11:03:44 BST 2005
+	- Note what paths have been requested in the feed title.
+
 0.03  Wed Aug  3 09:20:09 BST 2005
 	- Ensure times are correct in resulting feed (always UTC).
 	- Add a -o flag to write to a file but only if needed (makes
