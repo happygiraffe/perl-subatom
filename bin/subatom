@@ -18,7 +18,7 @@ use XML::Atom::Link;
 use XML::Atom::Person;
 use XML::Atom::Util qw( encode_xml );
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 my $me = basename $0;
 
 sub usage;
@@ -27,7 +27,7 @@ sub usage;
 local $ENV{PATH} = join ':', qw( /bin /usr/bin /usr/local/bin );
 
 my %opt = ( 'm' => 30 );
-getopts( "m:o:", \%opt ) or usage;
+getopts( "m:o:v:", \%opt ) or usage;
 
 my $repos = shift
   or usage;
@@ -53,7 +53,7 @@ if ( $opt{ o } ) {
 exit 0;
 
 sub usage {
-    die "usage: $me [-m max] repos_url [path ...]\n";
+    die "usage: $me [-m max] [-o output] [-v viewcvs] repos_url [path ...]\n";
 }
 
 sub fetch_log_items {
@@ -111,6 +111,24 @@ sub process_log_lines {
     return @items;
 }
 
+sub item_link {
+    my ( $item ) = @_;
+
+    my $link = XML::Atom::Link->new;
+    $link->type( 'text/html' );
+    $link->rel( 'alternate' );
+    # Avoid undef warning in earlier versions of XML::Atom.
+    $link->title( '' );
+    if ( $opt{ v } ) {
+        $link->href( $opt{ v } . $item->{ revision } );
+    } else {
+        # Just link to the first changed file.
+        my $path = ( split ' ', $item->{ affected }[0], 2 )[1];
+        $link->href( $repos_url . $path );
+    }
+    return $link;
+}
+
 sub item_to_entry {
     my ( $item ) = @_;
     my $msg = encode_xml join "\n", @{ $item->{ msg } };
@@ -133,15 +151,7 @@ sub item_to_entry {
     $author->name( $item->{ user } );
     $entry->author( $author );
 
-    my $link = XML::Atom::Link->new;
-    $link->type( 'text/html' );
-    $link->rel( 'alternate' );
-    # Avoid undef warning in earlier versions of XML::Atom.
-    $link->title( '' );
-    # XXX Find something better to link to...
-    my $path = ( split ' ', $item->{ affected }[0], 2 )[1];
-    $link->href( $repos_url . $path );
-    $entry->add_link( $link );
+    $entry->add_link( item_link( $item ) );
 
     return $entry;
 }
@@ -208,7 +218,7 @@ subatom - produce an atom feed from subversion commits
 
 =head1 SYNOPSIS
 
-  subatom [-m max] [-o output] REPOSITORY_URL [path ...]
+  subatom [-m max] [-o output] [-v viewcvs] REPOSITORY_URL [path ...]
 
 =head1 DESCRIPTION
 
@@ -231,6 +241,19 @@ it actually contains any newer entries.  If you will be serving the
 feed file using a web server, then doing this enables
 If-Modified-Since to work correctly (ie: feed readers will only
 download the file if it has actually changed).
+
+You can pass an URL using the I<-v> flag, and B<subatom> will create a
+link for each commit by appending the revision number to the URL.  For
+example a viewcvs URL might look like this (on the command line).
+
+    http://example.com/viewcvs/svn/?view=rev&rev=
+
+If the URL has question marks or ampersands, don't forget to quote it on
+the command line.  If you don't, the shell will interpret them and
+probably give some odd looking errors.
+
+If you don't pass in a URL, a link will be automatically made to the
+first file that changed in this commit.
 
 =head1 SEE ALSO
 

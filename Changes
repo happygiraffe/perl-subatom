@@ -1,5 +1,8 @@
 Revision history for Perl extension subatom.
 
+0.05  Thu Sep 22 13:04:14 BST 2005
+	- Add support for viewcvs URLs.
+
 0.04  Fri Aug 19 11:03:44 BST 2005
 	- Note what paths have been requested in the feed title.
 
