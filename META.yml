@@ -1,10 +1,10 @@
 ---
 name: subatom
-version: 0.05
+version: 0.06
 author: ~
 abstract: produce an atom feed from subversion commits
 license: bsd
 requires:
   XML::Atom: 0
 provides: {}
-generated_by: Module::Build version 0.26
+generated_by: Module::Build version 0.2604

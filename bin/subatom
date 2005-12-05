@@ -18,7 +18,7 @@ use XML::Atom::Link;
 use XML::Atom::Person;
 use XML::Atom::Util qw( encode_xml );
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 my $me = basename $0;
 
 sub usage;
@@ -131,7 +131,7 @@ sub item_link {
 
 sub item_to_entry {
     my ( $item ) = @_;
-    my $msg = encode_xml join "\n", @{ $item->{ msg } };
+    my $msg = encode_xml join "\n", @{ $item->{ msg } || [] };
     my $summary = $msg;
     $msg = "<p>$msg</p>\n";
     $msg .= "<p>Affected files:</p>\n";
