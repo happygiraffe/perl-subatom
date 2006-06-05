@@ -1,5 +1,5 @@
-subatom 0.01
-============
+subatom
+=======
 
 This is a small script for creating an Atom feed based upon the
 commits to a subversion repository.  You can select which parts of the
@@ -18,7 +18,7 @@ DEPENDENCIES
 
 This module requires these other modules and libraries:
 
-  XML::Atom
+  XML::Atom::SimpleFeed
 
 COPYRIGHT AND LICENCE
 

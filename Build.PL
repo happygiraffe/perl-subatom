@@ -10,6 +10,6 @@ Module::Build->new(
     license            => 'bsd',
     create_makefile_pl => 'passthrough',
     script_files       => ['bin/subatom'],
-    requires           => { 'XML::Atom' => 0 },
+    requires           => { 'XML::Atom::SimpleFeed' => 0.8 },
     add_to_cleanup     => ['subatom-*'],
 )->create_build_script;
