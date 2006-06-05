@@ -11,12 +11,12 @@ use warnings;
 use File::Basename qw( basename dirname );
 use File::Spec;
 use Getopt::Std qw( getopts );
+use XML::Atom::SimpleFeed;
 use XML::Atom::Content;
 use XML::Atom::Entry;
 use XML::Atom::Feed;
 use XML::Atom::Link;
 use XML::Atom::Person;
-use XML::Atom::Util qw( encode_xml );
 
 our $VERSION = '0.06';
 my $me = basename $0;
@@ -24,18 +24,19 @@ my $me = basename $0;
 sub usage;
 
 # Ensure we know what we're doing for tainting.
-local $ENV{PATH} = join ':', qw( /bin /usr/bin /usr/local/bin );
+local $ENV{ PATH } = join ':', qw( /bin /usr/bin /usr/local/bin );
 
 my %opt = ( 'm' => 30 );
 getopts( "m:o:v:", \%opt ) or usage;
 
 my $repos = shift
-  or usage;
+    or usage;
+
 # untaint.
 $repos =~ m/^((?:https?|file|svn|svn\+ssh):\/\/[-\/\w.\@]+)/;
 my $repos_url = $1;
 usage unless $repos_url;
-$repos_url =~ s!/$!!;           # Remove trailing slash.
+$repos_url =~ s!/$!!;    # Remove trailing slash.
 
 # Filter out crap (for tainting).
 my @path = grep { $_ } map { m!^(/[-/\w.\@]+)$!; $1 } @ARGV;
@@ -45,9 +46,10 @@ my @items = fetch_log_items( $repos_url, @path );
 
 my $feed = make_feed_from_items( \@items, \@path );
 if ( $opt{ o } ) {
-    my ( $file ) = $opt{ o } =~ m/^([-\w\/.]+)/; # untaint.
+    my ( $file ) = $opt{ o } =~ m/^([-\w\/.]+)/;    # untaint.
     write_feed_to_file( $feed => $file );
-} else {
+}
+else {
     print $feed->as_xml;
 }
 exit 0;
@@ -62,20 +64,25 @@ sub fetch_log_items {
     # See perlipc(3) for details about all this.
     my $pid = open my $fh, '-|';
     if ( $pid ) {
+
         # Parent.
         my @items = process_log_lines( $fh );
         close $fh;
         return @items;
-    } else {
+    }
+    else {
+
         # Child.  Ensure that errors get thrown away, since svn log
         # will probably die with a "broken pipe" error.  That's
         # because we close it as soon as we've read enough.
         open STDERR, File::Spec->devnull;
+
         # Ensure that we get subversion to generate times with no
         # timezone.  This means that they match the Atom expectation.
-        local $ENV{TZ} = 'UTC';
+        local $ENV{ TZ } = 'UTC';
         exec 'svn', 'log', '-v', $repos_url, @path
             or die "$me: exec(svn log): $!\n";
+
         # NOTREACHED
     }
 }
@@ -89,7 +96,8 @@ sub process_log_lines {
             push @items, $current_item if $current_item;
             last if @items >= $opt{ m };
             $current_item = {};
-        } elsif ( m/^r\d+ / ) {
+        }
+        elsif ( m/^r\d+ / ) {
             my ( $ver, $user, $date, $lines ) = split / \| /;
             $ver   =~ s/^r//;
             $date  =~ s/ \(.*\)//;
@@ -98,13 +106,17 @@ sub process_log_lines {
             $current_item->{ date }     = $date;
             $current_item->{ user }     = $user;
             $current_item->{ lines }    = $lines;
-        } elsif ( m/^Changed paths:/ ) {
+        }
+        elsif ( m/^Changed paths:/ ) {
             $in_paths = 1;
-        } elsif ( m/^$/ ) {
+        }
+        elsif ( m/^$/ ) {
             $in_paths = 0;
-        } elsif ( $in_paths ) {
+        }
+        elsif ( $in_paths ) {
             push @{ $current_item->{ affected } }, $_;
-        } else {
+        }
+        else {
             push @{ $current_item->{ msg } }, $_;
         }
     }
@@ -117,11 +129,14 @@ sub item_link {
     my $link = XML::Atom::Link->new;
     $link->type( 'text/html' );
     $link->rel( 'alternate' );
+
     # Avoid undef warning in earlier versions of XML::Atom.
     $link->title( '' );
     if ( $opt{ v } ) {
         $link->href( $opt{ v } . $item->{ revision } );
-    } else {
+    }
+    else {
+
         # Just link to the first changed file.
         my $path = ( split ' ', $item->{ affected }[0], 2 )[1];
         $link->href( $repos_url . $path );
