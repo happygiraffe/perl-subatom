@@ -12,11 +12,6 @@ use File::Basename qw( basename dirname );
 use File::Spec;
 use Getopt::Std qw( getopts );
 use XML::Atom::SimpleFeed;
-use XML::Atom::Content;
-use XML::Atom::Entry;
-use XML::Atom::Feed;
-use XML::Atom::Link;
-use XML::Atom::Person;
 
 our $VERSION = '0.06';
 my $me = basename $0;
@@ -30,7 +25,7 @@ my %opt = ( 'm' => 30 );
 getopts( "m:o:v:", \%opt ) or usage;
 
 my $repos = shift
-    or usage;
+  or usage;
 
 # untaint.
 $repos =~ m/^((?:https?|file|svn|svn\+ssh):\/\/[-\/\w.\@]+)/;
@@ -45,12 +40,13 @@ my @path = grep { $_ } map { m!^(/[-/\w.\@]+)$!; $1 } @ARGV;
 my @items = fetch_log_items( $repos_url, @path );
 
 my $feed = make_feed_from_items( \@items, \@path );
+my $xml = $feed->as_string;
 if ( $opt{ o } ) {
     my ( $file ) = $opt{ o } =~ m/^([-\w\/.]+)/;    # untaint.
-    write_feed_to_file( $feed => $file );
+    write_feed_to_file( $xml => $file );
 }
 else {
-    print $feed->as_xml;
+    print $xml;
 }
 exit 0;
 
@@ -81,7 +77,7 @@ sub fetch_log_items {
         # timezone.  This means that they match the Atom expectation.
         local $ENV{ TZ } = 'UTC';
         exec 'svn', 'log', '-v', $repos_url, @path
-            or die "$me: exec(svn log): $!\n";
+          or die "$me: exec(svn log): $!\n";
 
         # NOTREACHED
     }
@@ -126,27 +122,23 @@ sub process_log_lines {
 sub item_link {
     my ( $item ) = @_;
 
-    my $link = XML::Atom::Link->new;
-    $link->type( 'text/html' );
-    $link->rel( 'alternate' );
-
-    # Avoid undef warning in earlier versions of XML::Atom.
-    $link->title( '' );
     if ( $opt{ v } ) {
-        $link->href( $opt{ v } . $item->{ revision } );
+        return $opt{ v } . $item->{ revision };
     }
     else {
 
         # Just link to the first changed file.
         my $path = ( split ' ', $item->{ affected }[0], 2 )[1];
-        $link->href( $repos_url . $path );
+        return $repos_url . $path;
     }
-    return $link;
 }
 
 sub item_to_entry {
-    my ( $item ) = @_;
-    my $msg = encode_xml join "\n", @{ $item->{ msg } || [] };
+    my ( $feed, $item ) = @_;
+
+    # Use the internal writer to do this.  Slightly sneaky.
+    my $cdata   = \&XML::Atom::SimpleFeed::_cdata;
+    my $msg     = $cdata->( join( "\n", @{ $item->{ msg } || [] } ) );
     my $summary = $msg;
     $msg = "<p>$msg</p>\n";
     $msg .= "<p>Affected files:</p>\n";
@@ -154,21 +146,17 @@ sub item_to_entry {
     $msg .= "<li>$_</li>\n" foreach @{ $item->{ affected } };
     $msg .= "</ul>\n";
 
-    my $entry = XML::Atom::Entry->new;
-    $entry->id( $repos_url . '#r' . $item->{ revision } );
-    $entry->title( item_title( $item ) );
-    $entry->updated( svn_date_to_atom_date( $item->{ date } ) );
-    $entry->content( $msg );
-    $entry->content->type( 'application/xhtml+xml' );
-    $entry->summary( $summary );
+    $feed->add_entry(
+        id      => $repos_url . '#r' . $item->{ revision },
+        title   => item_title( $item ),
+        updated => svn_date_to_atom_date( $item->{ date } ),
+        content => $msg,
+        summary => $summary,
+        author  => $item->{ user },
+        link    => item_link( $item ),
+    );
 
-    my $author = XML::Atom::Person->new;
-    $author->name( $item->{ user } );
-    $entry->author( $author );
-
-    $entry->add_link( item_link( $item ) );
-
-    return $entry;
+    return;
 }
 
 sub svn_date_to_atom_date {
@@ -186,24 +174,26 @@ sub svn_date_to_atom_date {
 sub item_title {
     my ( $item ) = @_;
     my @files =
-        sort { length( $a ) <=> length( $b ) }
-        map  { ( split ' ' )[1] } @{ $item->{ affected } };
+      sort { length( $a ) <=> length( $b ) }
+      map  { ( split ' ' )[1] } @{ $item->{ affected } };
     my $d = dirname( $files[0] );
     return "r$item->{revision} - $d";
 }
 
 sub make_feed_from_items {
     my ( $items, $requested ) = @_;
-    my $feed = XML::Atom::Feed->new;
-    $feed->id( $repos_url );
 
     my $title = "Recent commits to $repos_url";
     $title .= " for @{$requested}"
-        unless @{ $requested } == 1 && $requested->[0] eq '/';
-    $feed->title( $title );
+      unless @{ $requested } == 1 && $requested->[0] eq '/';
 
-    $feed->updated( svn_date_to_atom_date( $items->[0]{ date } ) );
-    $feed->add_entry( item_to_entry( $_ ) ) foreach @{ $items };
+    my $feed = XML::Atom::SimpleFeed->new(
+        id      => $repos_url,
+        title   => $title,
+        updated => svn_date_to_atom_date( $items->[0]{ date } ),
+    );
+
+    item_to_entry( $feed, $_ ) foreach @{ $items };
     return $feed;
 }
 
@@ -213,13 +203,17 @@ sub make_feed_from_items {
 sub write_feed_to_file {
     my ( $feed, $file ) = @_;
     if ( -f $file ) {
+        # XXX This is quite evil and I should use a proper XML parser.
         open my $fh, '<', $file or die "$me: open($file): $!\n";
-        my $old_feed = XML::Atom::Feed->new( $fh );
+        my $old_feed = do { local $/; <$fh> };
         close $fh;
-        return if $feed->updated le $old_feed->updated;
+        my ( $old_updated ) = $old_feed =~ m{<updated>(.*?)</updated>};
+        my ( $new_updated ) = $feed     =~ m{<updated>(.*?)</updated>};
+        warn "# return if $new_updated le $old_updated;\n";
+        return if $new_updated le $old_updated;
     }
     open my $fh, '>', $file or die "$me: open(>$file): $!\n";
-    print $fh $feed->as_xml;
+    print $fh $feed;
     close $fh;
 }
 
