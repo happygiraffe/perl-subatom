@@ -13,7 +13,7 @@ use File::Spec;
 use Getopt::Std qw( getopts );
 use XML::Atom::SimpleFeed;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 my $me = basename $0;
 
 sub usage;
@@ -209,7 +209,6 @@ sub write_feed_to_file {
         close $fh;
         my ( $old_updated ) = $old_feed =~ m{<updated>(.*?)</updated>};
         my ( $new_updated ) = $feed     =~ m{<updated>(.*?)</updated>};
-        warn "# return if $new_updated le $old_updated;\n";
         return if $new_updated le $old_updated;
     }
     open my $fh, '>', $file or die "$me: open(>$file): $!\n";
