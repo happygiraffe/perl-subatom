@@ -242,8 +242,8 @@ sub untaint_repos_url {
     $url =~ s/\/+$//; # Remove trailing slash.
     return $url;
 }
-sub untaint_self_url    { m/^((?:https?|file):\/\/[-\/\w.\@~]+)/; $1 }
-sub untaint_viewcvs_url { m/^((?:https?|file):\/\/[-\/\w.\@~]+)/; $1 }
+sub untaint_self_url    { m/^((?:https?|file):\/\/[-\/\w.\@~?&=]+)/; $1 }
+sub untaint_viewcvs_url { m/^((?:https?|file):\/\/[-\/\w.\@~?&=]+)/; $1 }
 
 sub untaint {
     my ( $cmd, $arg ) = @_;
