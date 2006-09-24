@@ -135,7 +135,7 @@ sub item_link {
     }
     else {
         # Just link to the first changed file.
-        my $path = ( split ' ', $item->{ affected }[0], 2 )[1];
+        my $path = ( split ' ', $item->{ affected }[0] )[1];
         return $config->{ repos_url } . $path;
     }
 }
