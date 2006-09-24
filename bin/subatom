@@ -22,7 +22,7 @@ sub usage;
 local $ENV{ PATH } = join ':', qw( /bin /usr/bin /usr/local/bin );
 
 my %opt = ( 'm' => 30 );
-getopts( "m:o:v:", \%opt ) or usage;
+getopts( "m:o:v:s:", \%opt ) or usage;
 
 my $repos = shift
   or usage;
@@ -51,7 +51,8 @@ else {
 exit 0;
 
 sub usage {
-    die "usage: $me [-m max] [-o output] [-v viewcvs] repos_url [path ...]\n";
+    die
+"usage: $me [-m max] [-o output] [-v viewcvs] [-s linktoself] repos_url [path ...]\n";
 }
 
 sub fetch_log_items {
@@ -187,11 +188,14 @@ sub make_feed_from_items {
     $title .= " for @{$requested}"
       unless @{ $requested } == 1 && $requested->[0] eq '/';
 
-    my $feed = XML::Atom::SimpleFeed->new(
+    my %feed_params = (
         id      => $repos_url,
         title   => $title,
         updated => svn_date_to_atom_date( $items->[0]{ date } ),
     );
+    $feed_params{ link } = { rel => 'self', href => $opt{ s } }
+        if $opt{ s };
+    my $feed = XML::Atom::SimpleFeed->new( %feed_params );
 
     item_to_entry( $feed, $_ ) foreach @{ $items };
     return $feed;
@@ -263,11 +267,17 @@ probably give some odd looking errors.
 If you don't pass in a URL, a link will be automatically made to the
 first file that changed in this commit.
 
+If you pass an URL using the I<-s> flag, it will be used as the I<self>
+link for the feed.  Use this if you would like to avoid warnings from
+the feed validator.
+
 =head1 SEE ALSO
 
 L<XML::Atom>
 
 L<http://subversion.tigris.org/>
+
+L<http://feedvalidator.org/>
 
 =head1 AUTHOR
 

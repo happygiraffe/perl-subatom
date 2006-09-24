@@ -1,10 +1,15 @@
 Revision history for Perl extension subatom.
 
+0.09  Sun Sep 24 13:58:57 BST 2006
+	- Allow creation of feeds which pass the feed validator, by adding an
+	  option to specify the "self" link for the feed.
+	  Thanks to Hans F. Nordhaug for the patch.
+
 0.08  Mon Jun  5 23:16:29 BST 2006
-    - Remove warn statement that got left over from debugging...
+  - Remove warn statement that got left over from debugging...
 
 0.07  Mon Jun  5 23:02:13 BST 2006
-    - Switch to XML::Atom::SimpleFeed instead of XML::Atom.  It's much simpler.
+  - Switch to XML::Atom::SimpleFeed instead of XML::Atom.  It's much simpler.
 
 0.06  Mon Dec  5 14:33:31 GMT 2005
 	- Avoid an undefined value warning.
