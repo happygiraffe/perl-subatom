@@ -305,6 +305,7 @@ sub read_config {
             $current->{ $cmd } = $untainted_arg;
         }
     }
+    apply_defaults( $current );
     if ( is_good_config( $current ) ) {
         push @todo, $current;
     }
