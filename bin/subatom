@@ -394,6 +394,9 @@ Where should the feed be written to?  Must be specified.
 
 The path to the root of the repository.  Must be specified.
 
+B<NB>: I<subatom> likes to have the trailing slash removed, if you get any
+complaints, try taking it off.
+
 =item I<path>
 
 Specifies a directory in the repository to monitor commit messages for.
@@ -402,6 +405,14 @@ Defaults to '/'.
 =item I<self_url>
 
 Specifies the URL of the feed that will be produced.  No default.
+
+=item I<viewcvs_url>
+
+Specifies an URL prefix which will have the revision number appended to
+produce the link for each commit.  For example, if you have a trac setup,
+use something like this:
+
+  viewcvs_url http://dev.rubyonrails.org/changeset/
 
 =back
 
