@@ -411,17 +411,17 @@ use something like this:
 
 =head2 EXAMPLE
 
-    max_entries 30
-    output_file /home/dom/Sites/subatom.atom
-    path        /subatom
-    repos_url   http://happygiraffe.net/svn/public
-    self_url    http://localhost/~dom/subatom.atom
+    output_file /www/svn.atom
+    path        /trunk
+    repos_url   http://svn.collab.net/repos/svn
+    self_url    http://localhost/svn.atom
+    viewcvs_url http://svn.collab.net/viewvc/svn?view=rev&revision=
 
-    max_entries 30
-    output_file /home/dom/Sites/XML-Genx.atom
-    path        /XML-Genx
-    repos_url   http://happygiraffe.net/svn/public
-    self_url    http://localhost/~dom/XML-Genx.atom
+    output_file /www/rails.atom
+    path        /trunk
+    repos_url   http://dev.rubyonrails.org/svn/rails
+    self_url    http://localhost/rails.atom
+    viewcvs_url http://dev.rubyonrails.org/changeset/
 
 =head1 SEE ALSO
 
