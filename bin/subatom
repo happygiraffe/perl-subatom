@@ -13,7 +13,7 @@ use File::Spec;
 use Getopt::Std qw( getopts );
 use XML::Atom::SimpleFeed;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 my $me = basename $0;
 
 sub usage;
