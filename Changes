@@ -1,9 +1,11 @@
 Revision history for Perl extension subatom.
 
-0.09  Sun Sep 24 13:58:57 BST 2006
+0.09  Sun Sep 24 22:24:11 BST 2006
 	- Allow creation of feeds which pass the feed validator, by adding an
 	  option to specify the "self" link for the feed.
 	  Thanks to Hans F. Nordhaug for the patch.
+	- Introduce a configuration file.
+	- Fix a bug involving links to tags generating the wrong URL.
 
 0.08  Mon Jun  5 23:16:29 BST 2006
   - Remove warn statement that got left over from debugging...
