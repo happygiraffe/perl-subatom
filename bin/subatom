@@ -29,10 +29,10 @@ if ( $opt{ c } ) {
 }
 
 my $config = {
-    max_entries  => $opt{ m },
-    output_file  => $opt{ o },
-    viewcvs_url  => $opt{ v },
-    self_url     => $opt{ s },
+    max_entries => $opt{ m },
+    output_file => $opt{ o },
+    viewcvs_url => $opt{ v },
+    self_url    => $opt{ s },
 };
 my $repos = shift
   or usage;
@@ -200,7 +200,7 @@ sub make_feed_from_items {
         updated => svn_date_to_atom_date( $items->[0]{ date } ),
     );
     $feed_params{ link } = { rel => 'self', href => $config->{ self_url } }
-        if $config->{ self_url };
+      if $config->{ self_url };
     my $feed = XML::Atom::SimpleFeed->new( %feed_params );
 
     item_to_entry( $config, $feed, $_ ) foreach @{ $items };
@@ -230,16 +230,17 @@ sub valid_command {
     my ( $cmd ) = @_;
     # A command exists if it has an untaint routine.
     no strict 'refs';
-    return defined *{"untaint_$cmd"}{CODE};
+    return defined *{ "untaint_$cmd" }{ CODE };
 }
 
 sub untaint_max_entries { m/^(\d+)$/;         $1 }
 sub untaint_output_file { m/^([-\w\/.]+)/;    $1 }
 sub untaint_path        { m!^(/[-/\w.\@]+)$!; $1 }
+
 sub untaint_repos_url {
     m/^((?:https?|file|svn|svn\+ssh):\/\/[-\/\w.\@~]+)/;
     my $url = $1;
-    $url =~ s/\/+$//; # Remove trailing slash.
+    $url =~ s/\/+$//;    # Remove trailing slash.
     return $url;
 }
 sub untaint_self_url    { m/^((?:https?|file):\/\/[-\/\w.\@~?&=]+)/; $1 }
@@ -266,7 +267,6 @@ sub is_good_config {
     return $config->{ repos_url } && $config->{ output_file };
 }
 
-
 sub read_config {
     my ( $file ) = @_;
     my @todo;
@@ -292,13 +292,13 @@ sub read_config {
 
         my ( $cmd, $arg ) = split ' ', $_, 2;
         next unless $cmd;
-        if (!valid_command( $cmd ) ) {
+        if ( !valid_command( $cmd ) ) {
             warn "$me: $file: unknown command '$cmd' on line $.\n";
             next;
         }
         my $untainted_arg = untaint( $cmd, $arg );
         warn "$me: $file: using untainted value '$untainted_arg' on line $.\n"
-            if $arg ne $untainted_arg;
+          if $arg ne $untainted_arg;
         if ( $cmd eq 'path' ) {
             push @{ $current->{ path } }, $untainted_arg;
         }
@@ -313,10 +313,9 @@ sub read_config {
     else {
         warn "$me: $file: ignoring incomplete stanza before line $.\n";
     }
-    
+
     return @todo;
 }
-
 
 __END__
 
