@@ -27,12 +27,12 @@ if ( $opt{ c } ) {
     exit 0;
 }
 
-my $config = {
-    max_entries => $opt{ m },
-    output_file => $opt{ o },
-    viewcvs_url => $opt{ v },
-    self_url    => $opt{ s },
-};
+my $config = {};
+$config->{ max_entries } = untaint( max_entries => $opt{ m } ) if $opt{ m };
+$config->{ output_file } = untaint( output_file => $opt{ o } ) if $opt{ o };
+$config->{ viewcvs_url } = untaint( viewcvs_url => $opt{ v } ) if $opt{ v };
+$config->{ self_url }    = untaint( self_url    => $opt{ s } ) if $opt{ s };
+
 my $repos = shift
   or usage;
 
@@ -71,10 +71,8 @@ sub fetch_log_items {
 
     # See perlipc(3) for details about all this.
     my $pid = open my $fh, '-|';
-    binmode $fh, ':utf8';
     if ( $pid ) {
-
-        # Parent.
+        binmode $fh, ':utf8';
         my @items = process_log_lines( $config, $fh );
         close $fh;
         return @items;
@@ -87,8 +85,12 @@ sub fetch_log_items {
         # Try to coerce subversion into spitting out UTF-8.
         local $ENV{ LC_ALL } = 'en_US.UTF-8';
 
-        exec 'svn', 'log', '-v', $config->{ repos_url }, @{ $config->{ path } }
-          or die "$me: exec(svn log): $!\n";
+        my @cmd = ( 'svn', 'log', '-v' );
+        push @cmd, '--limit', $config->{ max_entries }
+          if `svn log --help` =~ m/--limit/;
+        push @cmd, $config->{ repos_url }, @{ $config->{ path } };
+
+        exec @cmd or die "$me: exec(@cmd): $!\n";
 
         # NOTREACHED
     }
