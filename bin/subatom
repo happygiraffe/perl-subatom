@@ -71,6 +71,7 @@ sub fetch_log_items {
 
     # See perlipc(3) for details about all this.
     my $pid = open my $fh, '-|';
+    binmode $fh, ':utf8';
     if ( $pid ) {
 
         # Parent.
@@ -82,6 +83,10 @@ sub fetch_log_items {
         # Ensure that we get subversion to generate times with no
         # timezone.  This means that they match the Atom expectation.
         local $ENV{ TZ } = 'UTC';
+
+        # Try to coerce subversion into spitting out UTF-8.
+        local $ENV{ LC_ALL } = 'en_US.UTF-8';
+
         exec 'svn', 'log', '-v', $config->{ repos_url }, @{ $config->{ path } }
           or die "$me: exec(svn log): $!\n";
 
