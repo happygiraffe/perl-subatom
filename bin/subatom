@@ -36,8 +36,8 @@ my $config = {
 my $repos = shift
   or usage;
 
-$config->{ repos_url } = untaint_repos_url( $repos );
-$config->{ path }      = [ map { untaint_path( $_ ) } @ARGV ];
+$config->{ repos_url } = untaint( repos_url => $repos );
+$config->{ path }      = [ map { untaint( path => $_ ) } @ARGV ];
 
 apply_defaults( $config );
 run_one_config( $config );
