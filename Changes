@@ -1,5 +1,12 @@
 Revision history for Perl extension subatom.
 
+0.10  Tue Sep 26 07:57:51 BST 2006
+	- Restore the ability to send output to stdout.
+	- Make the command line mode work, as well as the config file.
+	- Don't cover up stderr when executing "svn log".
+	- Force subversion to give us back UTF-8, and cope with it.
+	- Add support for using --limit if your svn has it.
+
 0.09  Sun Sep 24 22:24:11 BST 2006
 	- Allow creation of feeds which pass the feed validator, by adding an
 	  option to specify the "self" link for the feed.
