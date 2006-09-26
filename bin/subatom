@@ -9,11 +9,10 @@ use strict;
 use warnings;
 
 use File::Basename qw( basename dirname );
-use File::Spec;
 use Getopt::Std qw( getopts );
 use XML::Atom::SimpleFeed;
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 my $me = basename $0;
 
 sub usage;
@@ -75,12 +74,6 @@ sub fetch_log_items {
         return @items;
     }
     else {
-
-        # Child.  Ensure that errors get thrown away, since svn log
-        # will probably die with a "broken pipe" error.  That's
-        # because we close it as soon as we've read enough.
-        open STDERR, File::Spec->devnull;
-
         # Ensure that we get subversion to generate times with no
         # timezone.  This means that they match the Atom expectation.
         local $ENV{ TZ } = 'UTC';
@@ -124,6 +117,8 @@ sub process_log_lines {
             push @{ $current_item->{ msg } }, $_;
         }
     }
+    # Use up remaining lines.  This lets us avoid a SIGPIPE warning from svn.
+    1 while <$fh>;
     return @items;
 }
 
