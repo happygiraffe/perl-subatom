@@ -57,7 +57,12 @@ sub run_one_config {
     my @items = fetch_log_items( $config );
     my $feed  = make_feed_from_items( $config, \@items );
     my $xml   = $feed->as_string;
-    write_feed_to_file( $xml => $config->{ output_file } );
+    if ( $config->{ output_file } ) {
+        write_feed_to_file( $xml => $config->{ output_file } );
+    }
+    else {
+        print $xml;
+    }
     return;
 }
 
