@@ -12,7 +12,7 @@ use File::Basename qw( basename dirname );
 use Getopt::Std qw( getopts );
 use XML::Atom::SimpleFeed;
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 my $me = basename $0;
 
 sub usage;
@@ -323,7 +323,6 @@ sub read_config {
         }
     }
     $next_stanza->() if %$current;
-    die "I said *stop*";
     return @todo;
 }
 

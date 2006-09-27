@@ -1,5 +1,9 @@
 Revision history for Perl extension subatom.
 
+0.12  Wed Sep 27 16:54:06 BST 2006
+    - Remove the "die" line I put in for testing.  I *will* diff before
+      committing.  I *will*, I promise!
+
 0.11  Wed Sep 27 13:38:50 BST 2006
     - Add in the feed_title config item.
     - Cope with trailing blank lines in the config file.
