@@ -2,6 +2,7 @@ Revision history for Perl extension subatom.
 
 0.11  Wed Sep 27 13:38:50 BST 2006
     - Add in the feed_title config item.
+    - Cope with trailing blank lines in the config file.
 
 0.10  Tue Sep 26 07:57:51 BST 2006
 	- Restore the ability to send output to stdout.

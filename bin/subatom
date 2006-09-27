@@ -287,8 +287,8 @@ sub read_config {
     my @todo;
     my $current = {};
     my $next_stanza = sub {
-        apply_defaults( $current );
         if ( is_good_config( $current ) ) {
+            apply_defaults( $current );
             push @todo, $current;
         }
         else {
@@ -322,7 +322,8 @@ sub read_config {
             $current->{ $cmd } = $untainted_arg;
         }
     }
-    $next_stanza->();
+    $next_stanza->() if %$current;
+    die "I said *stop*";
     return @todo;
 }
 
