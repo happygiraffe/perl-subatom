@@ -194,16 +194,23 @@ sub item_title {
     return "r$item->{revision} - $d";
 }
 
-sub make_feed_from_items {
-    my ( $config, $items ) = @_;
-
+sub title_for_feed {
+    my ( $config ) = @_;
+    
+    return $config->{ feed_title } if $config->{ feed_title };
+    
     my $title = "Recent commits to $config->{repos_url}";
     $title .= " for @{$config->{path}}"
       unless @{ $config->{ path } } == 1 && $config->{ path }[0] eq '/';
+    return $title;
+}
+
+sub make_feed_from_items {
+    my ( $config, $items ) = @_;
 
     my %feed_params = (
         id      => $config->{ repos_url },
-        title   => $title,
+        title   => title_for_feed( $config ),
         updated => svn_date_to_atom_date( $items->[0]{ date } ),
     );
     $feed_params{ link } = { rel => 'self', href => $config->{ self_url } }
@@ -243,6 +250,7 @@ sub valid_command {
 sub untaint_max_entries { m/^(\d+)$/;         $1 }
 sub untaint_output_file { m/^([-\w\/.]+)/;    $1 }
 sub untaint_path        { m!^(/[-/\w.\@]+)$!; $1 }
+sub untaint_feed_title  { m/^(.*)$/;          $1 }
 
 sub untaint_repos_url {
     m/^((?:https?|file|svn|svn\+ssh):\/\/[-\/\w.\@~]+)/;
@@ -414,6 +422,11 @@ use something like this:
 
   viewcvs_url http://dev.rubyonrails.org/changeset/
 
+=item I<feed_title>
+
+Specify the title for the feed as a whole. Defaults to "Recent
+commits to $repos_url".
+
 =back
 
 =head2 EXAMPLE
@@ -423,6 +436,7 @@ use something like this:
     repos_url   http://svn.collab.net/repos/svn
     self_url    http://localhost/svn.atom
     viewcvs_url http://svn.collab.net/viewvc/svn?view=rev&revision=
+    feed_title  Subversion Changes
 
     output_file /www/rails.atom
     path        /trunk
