@@ -1,5 +1,8 @@
 Revision history for Perl extension subatom.
 
+0.13  Mon Jun 25 15:37:20 BST 2007
+  - Always use UTF-8 encoding when reading files.
+
 0.12  Wed Sep 27 16:54:06 BST 2006
     - Remove the "die" line I put in for testing.  I *will* diff before
       committing.  I *will*, I promise!
